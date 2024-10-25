@@ -1,10 +1,9 @@
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { Component, OnInit } from '@angular/core';
+import { ExportedNamedExpressionChange, HyperFormula } from 'hyperformula';
 
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HyperFormula } from 'hyperformula';
-import { HyperformulaService } from '../hyperformula.service';
+import { MatTableModule } from '@angular/material/table';
 import { TableRow } from '../step1/step1.component';
 
 @Component({
@@ -14,48 +13,60 @@ import { TableRow } from '../step1/step1.component';
   templateUrl: './step2.component.html',
   styleUrl: './step2.component.css'
 })
-export class Step2Component {
+export class Step2Component implements OnInit {
   displayedColumns: string[] = ['code', 'formuleValeur'];
-  table: MatTableDataSource<TableRow>;
-  data: TableRow[];
-  hyperFormulaService: HyperformulaService;
-  sheetName = 'Step2';
+  data: TableRow[] = [{ code: 'VAR_1', formule: '1', valeur: 1 }, { code: 'VAR_2', formule: '2', valeur: 2 }];
   editingElement: any = null; // Stocker la ligne laquelle on a cliquée
   hf: HyperFormula = HyperFormula.buildEmpty({ licenseKey: 'gpl-v3' });
 
-  constructor(_hyperFormulaService: HyperformulaService) {
-    this.hyperFormulaService = _hyperFormulaService;
+  constructor() { }
+
+  ngOnInit(): void {
     // Générer 1000 lignes de "VAR_1" à "VAR_1000"
     this.data = [{ code: 'VAR_1', formule: '1', valeur: 1 }, { code: 'VAR_2', formule: '2', valeur: 2 }];
-    this.hyperFormulaService.addNamedExpression(this.hf, 'VAR_1', '1');
-    this.hyperFormulaService.addNamedExpression(this.hf, 'VAR_2', '2');
+    this.hf.addNamedExpression('VAR_1', '1');
+    this.hf.addNamedExpression('VAR_2', '2');
     for (let i = 3; i <= 1000; i++) {
+      const code = `VAR_${i}`;
+      const formula = `VAR_${i - 1} + VAR_${i - 2}`;
+
+      // Ajouter l'expression nommée
+      this.hf.addNamedExpression(code, `=${formula}`);
+
+      // Calculate la valeur avec HyperFormula
+      const valeur = this.hf.getNamedExpressionValue(code);
+
+      // Ajouter le dans notre data source
       this.data.push({
-        code: `VAR_${i}`,
-        formule: `VAR_${i - 1} + VAR_${i - 2}`,
-        valeur: this.hyperFormulaService.getNamedExpressionValue(this.hf, `VAR_${i - 1}`) + this.hyperFormulaService.getNamedExpressionValue(this.hf, `VAR_${i - 2}`),
+        code,
+        formule: formula,
+        valeur: Number(valeur),
       });
-      this.hyperFormulaService.addNamedExpression(this.hf, `VAR_${i}`, `VAR_${i - 1} + VAR_${i - 2}`);
     }
-    this.table = new MatTableDataSource(this.data);
   }
 
-  onChangeFormula(valeur: Event, idx: number) {
-    if (valeur.target !== null) {
-      this.editingElement = null; // Reset editingElement pour que ca revienne à la vue Valeur
-      // const result = this.hyperFormulaService.verifyFormula((valeur.target as HTMLInputElement).value, idx);
-      // if (result !== undefined && result !== null) {
-      //   const cellChanged = this.hyperFormulaService.changeNamedExpression(`VAR_${idx + 1}`, Number(result));
-      //   if (cellChanged.length === 1) {
-      //     this.data[idx].valeur = Number(cellChanged[0].newValue);
-      //   } else {
-      //     for (let i = 1; i < cellChanged.length; i++) { // Index commence par 1 parce que la première valeur est un ExportedNamedExpressionChange, ici on a besoin de savoir juste la liste des ExportedCellChange
-      //       const cell = cellChanged[i] as ExportedCellChange;
-      //       this.data[cell.row - 1].valeur = Number(cell.newValue);
-      //     }
-      //   }
-      // }
+  onChangeFormula(event: Event, idx: number) {
+    const element = event.target;
+    if (element !== null) {
+      const selectedCode = this.data[idx].code;
+      const newFormula = (element as HTMLInputElement).value;
+      const affectedCells = this.hf.changeNamedExpression(selectedCode, `=${newFormula}`);
+      this.data[idx].formule = newFormula;
+      // Mise à jour les nouvelles valeurs affectées par le changement
+      affectedCells.forEach((cell) => {
+        const updatedCode = (cell as ExportedNamedExpressionChange).name;
+        const updatedValue = (cell as ExportedNamedExpressionChange).newValue;
+
+        const dataItem = this.data.find((item) => item.code === updatedCode);
+        if (dataItem) {
+          dataItem.valeur = Number(updatedValue);
+        }
+      });
     }
+  }
+
+  finishEdit() {
+    this.editingElement = null; // Exit edit mode
   }
 
   // Switch vers la vue Formule

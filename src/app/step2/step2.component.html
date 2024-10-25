@@ -11,15 +11,9 @@
         <ng-container matColumnDef="formuleValeur">
             <th mat-header-cell *matHeaderCellDef> Formule / Valeur </th>
             <td mat-cell *matCellDef="let element; let idx = index;">
-                <div *ngIf="editingElement !== element; else formulaEdit">
-                    <!-- Display value when not editing -->
-                    <input (click)="startEdit(element)" [(ngModel)]="element.valeur" [readonly]="idx < 2" />
-                </div>
-                <ng-template #formulaEdit>
-                    <!-- Display input field for formula when editing -->
-                    <input [(ngModel)]="element.formule" (blur)="onChangeFormula($event, idx)"
-                        (keyup.enter)="onChangeFormula($event, idx)" [attr.readonly]="idx < 2 ? true : null" />
-                </ng-template>
+                <input [(ngModel)]="editingElement === element ? element.formule : element.valeur"
+                    (focus)="startEdit(element)" (keydown.enter)="finishEdit()" (blur)="finishEdit()"
+                    (input)="onChangeFormula($event, idx)" />
             </td>
         </ng-container>
 

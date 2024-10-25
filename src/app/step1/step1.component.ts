@@ -34,13 +34,13 @@ export class Step1Component implements OnInit {
       const code = `VAR_${i}`;
       const formula = `VAR_${i - 1} + VAR_${i - 2}`;
 
-      // Add named expression to HyperFormula
+      // Ajouter l'expression nommée
       this.hf.addNamedExpression(code, `=${formula}`);
 
-      // Calculate the current value using HyperFormula
+      // Calculate la valeur avec HyperFormula
       const valeur = this.hf.getNamedExpressionValue(code);
 
-      // Push the entry with calculated value
+      // Ajouter le dans notre data source
       this.data.push({
         code,
         formule: formula,
@@ -55,12 +55,11 @@ export class Step1Component implements OnInit {
       const selectedCode = this.data[idx].code;
       const newFormula = (element as HTMLInputElement).value;
       const affectedCells = this.hf.changeNamedExpression(selectedCode, `=${newFormula}`);
-      // Loop through affected cells and update the data array
+      // Mise à jour les nouvelles valeurs affectées par le changement
       affectedCells.forEach((cell) => {
         const updatedCode = (cell as ExportedNamedExpressionChange).name;
-        const updatedValue = (cell as ExportedNamedExpressionChange).newValue;  // The new value of the expression
+        const updatedValue = (cell as ExportedNamedExpressionChange).newValue;
 
-        // Find the matching item in `data` by `code` and update its `valeur`
         const dataItem = this.data.find((item) => item.code === updatedCode);
         if (dataItem) {
           dataItem.valeur = Number(updatedValue);

@@ -1,11 +1,8 @@
 import { Component, ViewChild } from '@angular/core';
-import { ExportedCellChange, ExportedNamedExpressionChange } from 'hyperformula/typings/Exporter';
-import { MatTable, MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTable, MatTableModule } from '@angular/material/table';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HyperformulaService } from '../hyperformula.service';
-import { TableRow } from '../step1/step1.component';
 
 @Component({
   selector: 'app-step3',
@@ -16,14 +13,11 @@ import { TableRow } from '../step1/step1.component';
 })
 export class Step3Component {
   displayedColumns: string[] = ['code', 'formule', 'valeur'];
-  // tableDataSource: MatTableDataSource<TableRow>;
-  // data: TableRow[];
-  // hyperFormulaService: HyperformulaService;
   sheetName = 'Step3';
   sheetId!: number;
   @ViewChild(MatTable) table!: MatTable<any>;
 
-  constructor(_hyperFormulaService: HyperformulaService) {
+  constructor() {
     // this.hyperFormulaService = _hyperFormulaService;
     // this.hyperFormulaService.addNewSheet(this.sheetName);
     // const tmp = this.hyperFormulaService.getSheetId(this.sheetName);

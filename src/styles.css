@@ -1,4 +1,51 @@
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.table-container {
+    width: 100%;
+    display: flex;
+    overflow: auto;
+}
+
+table {
+    width: 100%;
+}
+
+th,
+td {
+    width: 33.33%;
+    border-right: 1px solid black;
+}
+
+th {
+    font-weight: bold;
+    background-color: lightblue !important;
+}
+
+tr:hover {
+    background-color: #e2e2e2;
+}
+
+th:last-child,
+td:last-child {
+    border-right: none;
+    /* Remove border from the last cell in each row */
+}
+
+input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+input:read-only {
+    background-color: #e2e2e2;
+}

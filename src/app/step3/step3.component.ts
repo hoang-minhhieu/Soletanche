@@ -1,12 +1,65 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { ExportedCellChange, ExportedNamedExpressionChange } from 'hyperformula/typings/Exporter';
+import { MatTable, MatTableDataSource, MatTableModule } from '@angular/material/table';
+
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HyperformulaService } from '../hyperformula.service';
+import { TableRow } from '../step1/step1.component';
 
 @Component({
   selector: 'app-step3',
   standalone: true,
-  imports: [],
+  imports: [MatTableModule, FormsModule, CommonModule],
   templateUrl: './step3.component.html',
   styleUrl: './step3.component.css'
 })
 export class Step3Component {
+  displayedColumns: string[] = ['code', 'formule', 'valeur'];
+  tableDataSource: MatTableDataSource<TableRow>;
+  data: TableRow[];
+  hyperFormulaService: HyperformulaService;
+  sheetName = 'Step3';
+  sheetId!: number;
+  @ViewChild(MatTable) table!: MatTable<any>;
 
+  constructor(_hyperFormulaService: HyperformulaService) {
+    this.hyperFormulaService = _hyperFormulaService;
+    this.hyperFormulaService.addNewSheet(this.sheetName);
+    const tmp = this.hyperFormulaService.getSheetId(this.sheetName);
+    if (tmp !== null) {
+      this.sheetId = tmp;
+    };
+    this.data = [];
+    this.tableDataSource = new MatTableDataSource(this.data);
+  }
+
+  onChangeFormula(valeur: Event, idx: number) {
+    if (valeur.target !== null) {
+      const result = this.hyperFormulaService.verifyFormula((valeur.target as HTMLInputElement).value, idx, this.sheetId);
+      if (result !== undefined && result !== null) {
+        const cellChanged = this.hyperFormulaService.changeNamedExpression(`VAR_${idx + 1}`, Number(result), this.sheetId);
+        if (cellChanged.length === 1) {
+          this.data[idx].valeur = Number(cellChanged[0].newValue);
+        } else {
+          for (let i = 0; i < cellChanged.length; i++) {
+            if (i === 0) { // 0 est de type ExportedNamedExpressionChange
+              const cell = cellChanged[i] as ExportedNamedExpressionChange;
+              this.data[idx].valeur = Number(cell.newValue);
+            } else if (i !== 1) { // On ne prend pas en compte indice 1 car c'est lui même comme 0, et le reste est de type ExportedCellChange
+              const cell = cellChanged[i] as ExportedCellChange;
+              this.data[cell.row].valeur = Number(cell.newValue);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  addNewRow() {
+    this.hyperFormulaService.setParameter(`VAR_${this.data.length + 1}`, '', 0, this.data.length, this.sheetId);
+    this.data.push({ code: `VAR_${this.data.length + 1}`, formule: '', valeur: 0 });
+    this.tableDataSource = new MatTableDataSource(this.data);
+    this.table.renderRows();
+  }
 }

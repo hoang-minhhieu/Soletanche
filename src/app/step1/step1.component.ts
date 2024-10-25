@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ExportedNamedExpressionChange, HyperFormula } from 'hyperformula';
 
 import { FormsModule } from '@angular/forms';
-import { HyperformulaService } from '../hyperformula.service';
 import { MatTableModule } from '@angular/material/table'
 
 export interface TableRow {
@@ -21,12 +20,9 @@ export interface TableRow {
 export class Step1Component implements OnInit {
   displayedColumns: string[] = ['code', 'formule', 'valeur'];
   data: TableRow[] = [{ code: 'VAR_1', formule: '1', valeur: 1 }, { code: 'VAR_2', formule: '2', valeur: 2 }];
-  hyperFormulaService: HyperformulaService;
   hf: HyperFormula = HyperFormula.buildEmpty({ licenseKey: 'gpl-v3' });
 
-  constructor(_hyperFormulaService: HyperformulaService) {
-    this.hyperFormulaService = _hyperFormulaService;
-  }
+  constructor() { }
 
   ngOnInit() {
     // Générer 1000 lignes de "VAR_1" à "VAR_1000"

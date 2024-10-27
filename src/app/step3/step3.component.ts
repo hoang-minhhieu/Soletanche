@@ -43,14 +43,14 @@ export class Step3Component implements OnInit {
             if (updatedValue instanceof DetailedCellError) {
               this.hf.undo();
               this.data[idx].code = this.previousCodeValue;
-              alert('Impossible de modifier ce code car il est utilisé dans la formule d\'une autre variable');
+              alert('Impossible de modifier ce code car il est utilisé dans la formule d\'une autre variable.');
             }
           };
         }
         this.previousCodeValue = newCode;
       } else {
         this.data[idx].code = this.previousCodeValue;
-        alert('Le même code existe déjà. Veuillez choisir un autre code');
+        alert('Le même code existe déjà. Veuillez choisir un autre code.');
       }
     }
   }
@@ -58,19 +58,35 @@ export class Step3Component implements OnInit {
   onChangeFormula(event: Event, idx: number) {
     const element = event.target;
     if (element !== null) {
+      let error = false;
       const selectedCode = this.data[idx].code;
       const newFormula = (element as HTMLInputElement).value;
       const affectedCells = this.hf.changeNamedExpression(selectedCode, `=${newFormula}`);
+      const oldData = JSON.parse(JSON.stringify(this.data)); // Deep copy
       // Mise à jour les nouvelles valeurs affectées par le changement
-      affectedCells.forEach((cell) => {
+
+      for (let i = 0; i < affectedCells.length; i++) {
+        const cell = affectedCells[i];
         const updatedCode = (cell as ExportedNamedExpressionChange).name;
         const updatedValue = (cell as ExportedNamedExpressionChange).newValue;
+
+        // Vérifier Références circulaires
+        if (updatedValue instanceof DetailedCellError) {
+          error = true;
+          this.hf.undo();
+          alert('Références circulaires detectées.');
+          break;
+        }
 
         const dataItem = this.data.find((item) => item.code === updatedCode);
         if (dataItem) {
           dataItem.valeur = Number(updatedValue);
         }
-      });
+      }
+
+      if (error) {
+        this.data = oldData;
+      }
     }
   }
 
@@ -92,7 +108,7 @@ export class Step3Component implements OnInit {
       if (updatedValue instanceof DetailedCellError) {
         error = true;
         this.hf.undo();
-        alert('Impossible de supprimer la ligne car ce code est utilisé dans la formule d\'une autre variable');
+        alert('Impossible de supprimer la ligne car ce code est utilisé dans la formule d\'une autre variable.');
         break;
       }
     };

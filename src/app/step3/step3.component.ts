@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { DetailedCellError, ExportedNamedExpressionChange, HyperFormula } from 'hyperformula';
+import { DetailedCellError, ErrorType, ExportedNamedExpressionChange, HyperFormula } from 'hyperformula';
 import { MatTable, MatTableModule } from '@angular/material/table';
 
 import { CommonModule } from '@angular/common';
@@ -50,7 +50,7 @@ export class Step3Component implements OnInit {
         this.previousCodeValue = newCode;
       } else {
         this.data[idx].code = this.previousCodeValue;
-        alert('Le même code existe déjà. Veuillez choisir un autre code.');
+        alert('Il existe déjà ce code ou le nouveau code ne respecte pas le règle de nommage (commence par une lettre ou underscore _).');
       }
     }
   }
@@ -62,19 +62,26 @@ export class Step3Component implements OnInit {
       const selectedCode = this.data[idx].code;
       const newFormula = (element as HTMLInputElement).value;
       const affectedCells = this.hf.changeNamedExpression(selectedCode, `=${newFormula}`);
-      const oldData = JSON.parse(JSON.stringify(this.data)); // Deep copy
+      // const oldData = JSON.parse(JSON.stringify(this.data)); // Deep copy
       // Mise à jour les nouvelles valeurs affectées par le changement
-
       for (let i = 0; i < affectedCells.length; i++) {
         const cell = affectedCells[i];
         const updatedCode = (cell as ExportedNamedExpressionChange).name;
         const updatedValue = (cell as ExportedNamedExpressionChange).newValue;
-
         // Vérifier Références circulaires
         if (updatedValue instanceof DetailedCellError) {
           error = true;
-          this.hf.undo();
-          alert('Références circulaires detectées.');
+          switch (updatedValue.type) {
+            case ErrorType.NAME: {
+              alert(`Expression ${newFormula} n'existe pas.`);
+              break;
+            }
+            case ErrorType.CYCLE: {
+              alert('Références circulaires detectées.');
+              break;
+            }
+            default: alert(`Unhandled error: ${updatedValue}`);
+          }
           break;
         }
 
@@ -85,7 +92,17 @@ export class Step3Component implements OnInit {
       }
 
       if (error) {
-        this.data = oldData;
+        if (this.previousFormulaValue !== '') {
+          const oldValue = this.hf.undo();
+          // Rollback to old formula and value
+          this.data[idx].formule = this.previousFormulaValue;
+          this.data[idx].valeur = Number(oldValue[0].newValue);
+        } else {
+          // Init row
+          this.data[idx].formule = '';
+          this.data[idx].valeur = 0;
+        }
+        this.table.renderRows();
       }
     }
   }

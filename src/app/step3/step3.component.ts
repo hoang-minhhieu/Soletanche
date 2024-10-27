@@ -20,6 +20,7 @@ export class Step3Component implements OnInit {
   @ViewChild(MatTable) table!: MatTable<any>;
   hf: HyperFormula = HyperFormula.buildEmpty({ licenseKey: 'gpl-v3' });
   previousCodeValue: any = null; // Stocker la valeur de Code avant le trigger (change) au cas ou si la nouvelle valeur n'est pas valide
+  previousFormulaValue: any = null // Stocker la valeur de Formule avant le trigger (change) au cas ou si la nouvelle valeur n'est pas valide
 
   constructor() { }
 
@@ -36,7 +37,15 @@ export class Step3Component implements OnInit {
       if (isValid) {
         this.hf.addNamedExpression(newCode, `=${formula}`);
         if (this.previousCodeValue !== '') {
-          this.hf.removeNamedExpression(this.previousCodeValue);
+          const changes = this.hf.removeNamedExpression(this.previousCodeValue);
+          for (let i = 0; i < changes.length; i++) {
+            const updatedValue = (changes[i] as ExportedNamedExpressionChange).newValue;
+            if (updatedValue instanceof DetailedCellError) {
+              this.hf.undo();
+              this.data[idx].code = this.previousCodeValue;
+              alert('Impossible de modifier ce code car il est utilisé dans la formule d\'une autre variable');
+            }
+          };
         }
         this.previousCodeValue = newCode;
       } else {
@@ -70,12 +79,11 @@ export class Step3Component implements OnInit {
   }
 
   startEditFormula(formule: any) {
-    this.previousCodeValue = formule;
+    this.previousFormulaValue = formule;
   }
 
   deleteRow(idx: number) {
     const selectedCode = this.data[idx].code;
-    const formula = this.data[idx].formule;
     const changes = this.hf.removeNamedExpression(selectedCode);
     let error = false;
 
@@ -83,6 +91,8 @@ export class Step3Component implements OnInit {
       const updatedValue = (changes[i] as ExportedNamedExpressionChange).newValue;
       if (updatedValue instanceof DetailedCellError) {
         error = true;
+        this.hf.undo();
+        alert('Impossible de supprimer la ligne car ce code est utilisé dans la formule d\'une autre variable');
         break;
       }
     };
@@ -90,9 +100,6 @@ export class Step3Component implements OnInit {
     if (!error) {
       this.data.splice(idx, 1);
       this.table.renderRows();
-    } else {
-      this.hf.addNamedExpression(selectedCode, `=${formula}`);
-      alert('Impossible de supprimer la ligne car ce code est utilisé dans la formule d\'une autre variable');
     }
   }
 

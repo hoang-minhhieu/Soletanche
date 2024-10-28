@@ -4,13 +4,14 @@ import { MatTable, MatTableModule } from '@angular/material/table';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TableRow } from '../step1/step1.component';
 
 @Component({
   selector: 'app-step3',
   standalone: true,
-  imports: [MatTableModule, FormsModule, CommonModule, MatIconModule],
+  imports: [MatTableModule, FormsModule, CommonModule, MatIconModule, MatButtonModule],
   templateUrl: './step3.component.html',
   styleUrl: './step3.component.css'
 })
@@ -62,7 +63,6 @@ export class Step3Component implements OnInit {
       const selectedCode = this.data[idx].code;
       const newFormula = (element as HTMLInputElement).value;
       const affectedCells = this.hf.changeNamedExpression(selectedCode, `=${newFormula}`);
-      // const oldData = JSON.parse(JSON.stringify(this.data)); // Deep copy
       // Mise à jour les nouvelles valeurs affectées par le changement
       for (let i = 0; i < affectedCells.length; i++) {
         const cell = affectedCells[i];
@@ -117,22 +117,27 @@ export class Step3Component implements OnInit {
 
   deleteRow(idx: number) {
     const selectedCode = this.data[idx].code;
-    const changes = this.hf.removeNamedExpression(selectedCode);
-    let error = false;
-
-    for (let i = 0; i < changes.length; i++) {
-      const updatedValue = (changes[i] as ExportedNamedExpressionChange).newValue;
-      if (updatedValue instanceof DetailedCellError) {
-        error = true;
-        this.hf.undo();
-        alert('Impossible de supprimer la ligne car ce code est utilisé dans la formule d\'une autre variable.');
-        break;
-      }
-    };
-
-    if (!error) {
+    if (selectedCode === '') {
       this.data.splice(idx, 1);
       this.table.renderRows();
+    } else {
+      const changes = this.hf.removeNamedExpression(selectedCode);
+      let error = false;
+
+      for (let i = 0; i < changes.length; i++) {
+        const updatedValue = (changes[i] as ExportedNamedExpressionChange).newValue;
+        if (updatedValue instanceof DetailedCellError) {
+          error = true;
+          this.hf.undo();
+          alert('Impossible de supprimer la ligne car ce code est utilisé dans la formule d\'une autre variable.');
+          break;
+        }
+      };
+
+      if (!error) {
+        this.data.splice(idx, 1);
+        this.table.renderRows();
+      }
     }
   }
 
